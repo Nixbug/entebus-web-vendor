@@ -1,128 +1,185 @@
 <script lang="ts">
 	import entebusLogo from '$lib/assets/entebus_logo.png';
 	import { goto } from '$app/navigation';
+	import { tick, onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { bussinesses } from '$lib/dummy-data';
+	import type { Bussiness } from '$lib/types/type';
+
 	let username: string = '';
 	let password: string = '';
-	let company: string = '';
-	let selectedCompany: string = '';
-	let companies: string[] = [
-		'Entebus',
-		'Acme Transport',
-		'TransitCo',
-		'CityLines',
-		'Global Transit',
-		'MetroLink',
-		'National Buses'
-	];
-	let showCompanyList = false;
-	let filteredCompanies = companies;
-	let showPassword: boolean = false;
+	let rememberMe: boolean = false;
+	let bussinessSearch: string = '';
+	let selectedBussiness: string = '';
+	let bussinessInput: HTMLInputElement | null = null;
+	let showDropdown = false;
+	let showPassword = false;
+	let bussinessName: string | null = null;
+	let filteredBussinesses: Bussiness[] = [];
+	let loginError = '';
+	let prefilledBussiness = false;
 
-	//-- Password visibility toggle handler --
+	//-- Check URL for bussinessName or name query parameter to pre-fill bussiness field --
+	$: bussinessName =
+		$page.url.searchParams.get('bussinessName') ?? $page.url.searchParams.get('name') ?? null;
+
+	//-- Filter bussinesses based on search input --
+	$: filteredBussinesses = bussinesses.filter((c) =>
+		c.name.toLowerCase().includes(bussinessSearch.toLowerCase())
+	);
+
+	//-- If bussinessName is set, pre-fill bussiness field and show dropdown (run once) --
+	$: if (bussinessName && !selectedBussiness && !prefilledBussiness) {
+		const name = bussinessName;
+		if (!bussinessSearch) {
+			bussinessSearch = name;
+		}
+		const exact = bussinesses.find((c) => c.name.toLowerCase() === name.toLowerCase());
+		if (exact) {
+			selectedBussiness = exact.name;
+		}
+		showDropdown = true;
+		prefilledBussiness = true;
+		tick().then(() => bussinessInput?.focus());
+	}
+
+	//-- Toggle password visibility --
 	function togglePassword() {
 		showPassword = !showPassword;
 	}
 
-	//-- Company search handlers --
-	function onCompanyInput(e: Event) {
+	//-- Handle bussiness input --
+	function onBussinessInput(e: Event) {
 		const val = (e.target as HTMLInputElement).value;
-		company = val;
-		// typing clears explicit selection until user picks from list
-		selectedCompany = '';
-		filteredCompanies = companies.filter((c) => c.toLowerCase().includes(val.toLowerCase()));
-		showCompanyList = true;
+		bussinessSearch = val;
+		selectedBussiness = '';
+		loginError = '';
+		showDropdown = true;
 	}
 
-	function selectCompany(c: string) {
-		company = c;
-		selectedCompany = c;
-		showCompanyList = false;
+	//-- Select bussiness from dropdown --
+	function selectBussiness(name: string) {
+		bussinessSearch = name;
+		selectedBussiness = name;
+		loginError = '';
+		showDropdown = false;
 	}
 
-	function onCompanyFocus() {
-		if (selectedCompany && company === selectedCompany) {
-			filteredCompanies = [selectedCompany];
-		} else {
-			filteredCompanies = companies;
+	//-- Focus on bussiness input when dropdown is opened --
+	function onBussinessFocus() {
+		showDropdown = true;
+	}
+
+	//-- Handle click outside of dropdown --
+	function handleClickOutside(e: MouseEvent) {
+		const target = e.target as HTMLElement;
+		if (!target.closest('.bussiness-field-container')) {
+			showDropdown = false;
 		}
-		showCompanyList = true;
 	}
 
-	function onCompanyBlur() {
-		setTimeout(() => (showCompanyList = false), 150);
+	//-- Toggle dropdown --
+	function toggleDropdown() {
+		showDropdown = !showDropdown;
+		tick().then(() => bussinessInput?.focus());
 	}
 
-	function toggleCompanyList() {
-		showCompanyList = !showCompanyList;
-		if (showCompanyList) {
-			filteredCompanies =
-				selectedCompany && company === selectedCompany ? [selectedCompany] : companies;
-		}
-		setTimeout(() => (document.getElementById('companyName') as HTMLInputElement)?.focus(), 0);
-	}
-
-	//-- Login handler (mock) --
+	//-- Handle login --
 	function handleLogin() {
+		if (!selectedBussiness) {
+			loginError = 'Please select a business from the list.';
+			return;
+		}
 		goto('/dashboard');
-		alert('Login successful!');
-		console.log('Company:', company);
-		console.log('Username:', username);
-		console.log('Password:', password);
 	}
+	onMount(() => {
+		document.addEventListener('click', handleClickOutside);
+		return () => document.removeEventListener('click', handleClickOutside);
+	});
 </script>
 
 <div class="d-flex justify-content-center align-items-center vh-100 bg-light login-bg">
-	<div class="card login-card shadow-sm p-4 mx-3 mx-sm-0 w-100" style="max-width: 30rem;">
+	<div class="card login-card shadow-sm p-4 mx-3 mx-sm-0 w-100">
 		<div class="text-center mb-4">
-			<img src={entebusLogo} alt="Entebus Logo" style="width: 4rem; height: 4rem;" />
+			<img src={entebusLogo} alt="Entebus Logo" class="logo-img" />
 			<h3 class="mt-2 fw-inter-700">Vendor Sign In</h3>
-			<h6 class="text-secondary fw-inter-400">Access your Bussiness dashboard</h6>
+			{#if bussinessName}
+				<p class="text-secondary mb-1">Access <b>{bussinessName}</b> Dashboard</p>
+			{:else}
+				<p class="text-secondary mb-1">Access Your Business Dashboard</p>
+			{/if}
 		</div>
+
 		<form on:submit|preventDefault={handleLogin}>
-			<!-- company field -->
-			<div class="mb-3" style="position: relative;">
-				<label for="companyName" class="form-label">Company</label>
+			<!-- Bussiness field with dropdown -->
+			<div class="mb-3 bussiness-field-container">
+				<label for="bussinessName" class="form-label">Bussiness</label>
 				<div class="input-group">
 					<input
-						id="companyName"
+						id="bussinessName"
 						class="form-control form-control-lg"
-						placeholder="search Business name"
-						bind:value={company}
-						on:input={onCompanyInput}
-						on:focus={onCompanyFocus}
-						on:blur={onCompanyBlur}
+						placeholder="search or select your business"
+						bind:this={bussinessInput}
+						bind:value={bussinessSearch}
+						on:input={onBussinessInput}
+						on:focus={onBussinessFocus}
 						autocomplete="off"
+						role="combobox"
+						aria-autocomplete="list"
+						aria-controls="bussiness-listbox"
+						aria-expanded={showDropdown}
 						required
 					/>
-					<span
-						class="input-group-text company-toggle"
-						role="button"
-						tabindex="0"
-						on:mousedown|preventDefault={toggleCompanyList}
-						aria-expanded={showCompanyList}
-						aria-label="Toggle company list"
+					<button
+						class="input-group-text bussiness-toggle"
+						type="button"
+						on:click={toggleDropdown}
+						on:mousedown|preventDefault
+						aria-expanded={showDropdown}
+						aria-label="Toggle business list"
 					>
-						<i class={`bi ${showCompanyList ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
-					</span>
+						<i class={`bi ${showDropdown ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+					</button>
 				</div>
-				{#if showCompanyList && filteredCompanies.length}
-					<ul class="company-list position-absolute w-100 shadow-sm" role="listbox">
-						{#each filteredCompanies as comp}
-							<li
-								tabindex="0"
-								role="option"
-								aria-selected={comp === selectedCompany}
-								class="company-item"
-								class:selected={comp === selectedCompany}
-								on:mousedown={() => selectCompany(comp)}
-							>
-								{comp}
-							</li>
-						{/each}
-					</ul>
+
+				<!-- Dropdown -->
+				{#if showDropdown}
+					<div class="dropdown-menu-custom" id="bussiness-listbox" role="listbox">
+						{#if filteredBussinesses.length > 0}
+							{#each filteredBussinesses as bussiness, i}
+								<button
+									type="button"
+									id={'bussiness-option-' + i}
+									role="option"
+									class="dropdown-item-custom"
+									class:selected={bussiness.name === selectedBussiness}
+									aria-selected={bussiness.name === selectedBussiness}
+									on:click={() => selectBussiness(bussiness.name)}
+									on:keydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											selectBussiness(bussiness.name);
+										}
+									}}
+								>
+									<i class="bi bi-building me-2"></i>
+									{bussiness.name}
+								</button>
+							{/each}
+						{:else}
+							<div class="dropdown-empty">
+								<i class="bi bi-search mb-2 fs-4"></i>
+								<p class="mb-0">No businesses found matching "{bussinessSearch}"</p>
+							</div>
+						{/if}
+					</div>
+				{/if}
+				{#if loginError}
+					<p class="text-danger mt-1 mb-0 small">{loginError}</p>
 				{/if}
 			</div>
-			<!-- username field -->
+
+			<!-- Username field -->
 			<div class="mb-3">
 				<label for="username" class="form-label">Username</label>
 				<input
@@ -134,7 +191,8 @@
 					required
 				/>
 			</div>
-			<!--password field -->
+
+			<!-- Password field -->
 			<div class="mb-3">
 				<label for="password" class="form-label">Password</label>
 				<div class="input-group">
@@ -147,36 +205,37 @@
 						required
 					/>
 					<span
-						class="input-group-text bg-white border-1"
+						class="input-group-text bg-white border-1 password-toggle"
 						role="button"
 						tabindex="0"
 						on:click={togglePassword}
-						on:keydown={(e) => e.key === 'Enter' && togglePassword()}
-						aria-label="Toggle password visibility"
+						on:keydown={(e) =>
+							(e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), togglePassword())}
+						aria-label={showPassword ? 'Hide password' : 'Show password'}
 						aria-pressed={showPassword}
-						style="cursor: pointer;"
 					>
-						<i
-							class={`bi ${showPassword ? 'bi-eye' : 'bi-eye-slash '} eye-color`}
-							style="font-size: 1.25rem;"
-						></i>
+						<i class={`bi ${showPassword ? 'bi-eye' : 'bi-eye-slash'} eye-color`}></i>
 					</span>
 				</div>
 			</div>
-			<!-- remember me checkbox -->
+
+			<!-- Remember me checkbox -->
 			<div class="mb-3 form-check">
-				<input type="checkbox" class="form-check-input" id="remember-me" />
-				<label class="form-check-label text-secondary" for="rememberMe">Remember Me</label>
+				<input
+					type="checkbox"
+					class="form-check-input"
+					id="remember-me"
+					bind:checked={rememberMe}
+				/>
+				<label class="form-check-label text-secondary" for="remember-me">Remember Me</label>
 			</div>
-			<!-- login button -->
-			<button type="submit" style="color: white;" class="btn sign-in-btn mb-3 w-100 fw-inter-700"
-				>Sign in</button
-			>
+
+			<!-- Login button -->
+			<button type="submit" class="btn sign-in-btn mb-3 w-100 fw-inter-700"> Sign in </button>
 		</form>
 	</div>
 </div>
 
-<!-- style -->
 <style>
 	.login-bg {
 		background: radial-gradient(rgba(4, 70, 105, 0.293), rgba(255, 255, 255, 1) 60%);
@@ -186,6 +245,7 @@
 	}
 	.sign-in-btn {
 		background: linear-gradient(90deg, #2033b1 0%, #47c7ff 50%, #10c555 100%);
+		color: white;
 		border: none;
 		border-radius: 8px;
 		padding: 12px;
@@ -193,42 +253,7 @@
 	.sign-in-btn:hover {
 		box-shadow: 0 8px 24px rgba(14, 201, 167, 0.35);
 	}
-
-	.company-list {
-		top: calc(100% + 0.4rem);
-		left: 0;
-		max-height: 12rem;
-		overflow: auto;
-		z-index: 1050;
-		border-radius: 0.5rem;
-		background: #ffffff;
-		border: 1px solid rgba(0, 0, 0, 0.08);
-		box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
-		margin: 0;
-		padding: 0.25rem 0;
-	}
-
-	.company-item {
-		list-style: none;
-		padding: 0.55rem 0.75rem;
-		cursor: pointer;
-		color: #212529;
-	}
-
-	.company-item + .company-item {
-		border-top: 1px solid rgba(0, 0, 0, 0.04);
-	}
-
-	.company-item:hover {
-		background: #f8f9fa;
-	}
-
-	.company-item.selected {
-		background: #e9f7ff;
-		font-weight: 600;
-		color: #0b63a3;
-	}
-	.company-toggle {
+	.bussiness-toggle {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -237,9 +262,108 @@
 		border-left: 1px solid rgba(0, 0, 0, 0.06);
 		cursor: pointer;
 	}
-
-	.company-toggle i {
+	.bussiness-toggle i {
 		color: #6c757d;
 		font-size: 1rem;
+	}
+
+	.dropdown-menu-custom {
+		position: absolute;
+		top: calc(100% + 0.5rem);
+		left: 0;
+		right: 0;
+		max-height: 250px;
+		overflow-y: auto;
+		background: white;
+		border: 1px solid #e0e0e0;
+		border-radius: 12px;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+		z-index: 1000;
+		padding: 0.5rem 0;
+		animation: dropdownFade 0.2s ease;
+	}
+
+	@keyframes dropdownFade {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.dropdown-item-custom {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		border: none;
+		background: none;
+		text-align: left;
+		font-size: 0.95rem;
+		color: #333;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.dropdown-item-custom:hover,
+	.dropdown-item-custom.highlighted {
+		background: linear-gradient(
+			90deg,
+			rgba(32, 51, 177, 0.05) 0%,
+			rgba(71, 199, 255, 0.05) 50%,
+			rgba(16, 197, 85, 0.05) 100%
+		);
+	}
+
+	.dropdown-item-custom.selected {
+		background: linear-gradient(
+			90deg,
+			rgba(32, 51, 177, 0.1) 0%,
+			rgba(71, 199, 255, 0.1) 50%,
+			rgba(16, 197, 85, 0.1) 100%
+		);
+		color: #2033b1;
+		font-weight: 500;
+	}
+
+	.dropdown-item-custom i {
+		color: #47c7ff;
+		font-size: 1rem;
+	}
+
+	.dropdown-empty {
+		padding: 2rem 1rem;
+		text-align: center;
+		color: #999;
+	}
+
+	.dropdown-empty i {
+		color: #47c7ff;
+		opacity: 0.5;
+	}
+
+	.login-card {
+		max-width: 30rem;
+	}
+
+	.logo-img {
+		width: 4rem;
+		height: 4rem;
+		object-fit: contain;
+	}
+
+	.bussiness-field-container {
+		position: relative;
+	}
+
+	.password-toggle {
+		cursor: pointer;
+	}
+
+	.password-toggle .bi {
+		font-size: 1.25rem;
 	}
 </style>
