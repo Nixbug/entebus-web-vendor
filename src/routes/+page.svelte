@@ -310,8 +310,7 @@
 		transition: all 0.2s;
 	}
 
-	.dropdown-item-custom:hover,
-	.dropdown-item-custom.highlighted {
+	.dropdown-item-custom:hover {
 		background: linear-gradient(
 			90deg,
 			rgba(32, 51, 177, 0.05) 0%,

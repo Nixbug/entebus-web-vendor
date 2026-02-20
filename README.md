@@ -58,7 +58,7 @@ The image is tagged using the format: <branch-name>-<commit-id> (for latest imag
 # Building the docker image
 ```bash
 docker build -t <registry>/<namespace>/entebus-web-vendor:<branch>-<commit-id> \
-    -t <registry>/<namespace>entebus-web-vendor:<branch>-latest .
+    -t <registry>/<namespace>/entebus-web-vendor:<branch>-latest .
 
 # Running the docker image
 docker run -d --name <container-name> -p <host-port>:<container-port> \
