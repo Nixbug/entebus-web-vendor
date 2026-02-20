@@ -1,6 +1,6 @@
-import type { Bussiness } from '$lib/types/type';
+import type { Business } from '$lib/types/type';
 
-export const bussinesses: Bussiness[] = [
+export const businesses: Business[] = [
     {
         id: 1,
         name: 'TechCorp Solutions'

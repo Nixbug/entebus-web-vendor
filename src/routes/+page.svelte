@@ -3,44 +3,44 @@
 	import { goto } from '$app/navigation';
 	import { tick, onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { bussinesses } from '$lib/dummy-data';
-	import type { Bussiness } from '$lib/types/type';
+	import { businesses } from '$lib/dummy-data';
+	import type { Business } from '$lib/types/type';
 
 	let username: string = '';
 	let password: string = '';
 	let rememberMe: boolean = false;
-	let bussinessSearch: string = '';
-	let selectedBussiness: string = '';
-	let bussinessInput: HTMLInputElement | null = null;
+	let businessSearch: string = '';
+	let selectedBusiness: string = '';
+	let businessInput: HTMLInputElement | null = null;
 	let showDropdown = false;
 	let showPassword = false;
-	let bussinessName: string | null = null;
-	let filteredBussinesses: Bussiness[] = [];
+	let businessName: string | null = null;
+	let filteredBusinesses: Business[] = [];
 	let loginError = '';
-	let prefilledBussiness = false;
+	let prefilledBusiness = false;
 
-	//-- Check URL for bussinessName or name query parameter to pre-fill bussiness field --
-	$: bussinessName =
-		$page.url.searchParams.get('bussinessName') ?? $page.url.searchParams.get('name') ?? null;
+	//-- Check URL for businessName or name query parameter to pre-fill business field --
+	$: businessName =
+		$page.url.searchParams.get('businessName') ?? $page.url.searchParams.get('name') ?? null;
 
-	//-- Filter bussinesses based on search input --
-	$: filteredBussinesses = bussinesses.filter((c) =>
-		c.name.toLowerCase().includes(bussinessSearch.toLowerCase())
+	//-- Filter businesses based on search input --
+	$: filteredBusinesses = businesses.filter((c) =>
+		c.name.toLowerCase().includes(businessSearch.toLowerCase())
 	);
 
-	//-- If bussinessName is set, pre-fill bussiness field and show dropdown (run once) --
-	$: if (bussinessName && !selectedBussiness && !prefilledBussiness) {
-		const name = bussinessName;
-		if (!bussinessSearch) {
-			bussinessSearch = name;
+	//-- If businessName is set, pre-fill business field and show dropdown (run once) --
+	$: if (businessName && !selectedBusiness && !prefilledBusiness) {
+		const name = businessName;
+		if (!businessSearch) {
+			businessSearch = name;
 		}
-		const exact = bussinesses.find((c) => c.name.toLowerCase() === name.toLowerCase());
+		const exact = businesses.find((c) => c.name.toLowerCase() === name.toLowerCase());
 		if (exact) {
-			selectedBussiness = exact.name;
+			selectedBusiness = exact.name;
 		}
 		showDropdown = true;
-		prefilledBussiness = true;
-		tick().then(() => bussinessInput?.focus());
+		prefilledBusiness = true;
+		tick().then(() => businessInput?.focus());
 	}
 
 	//-- Toggle password visibility --
@@ -48,32 +48,32 @@
 		showPassword = !showPassword;
 	}
 
-	//-- Handle bussiness input --
-	function onBussinessInput(e: Event) {
+	//-- Handle business input --
+	function onBusinessInput(e: Event) {
 		const val = (e.target as HTMLInputElement).value;
-		bussinessSearch = val;
-		selectedBussiness = '';
+		businessSearch = val;
+		selectedBusiness = '';
 		loginError = '';
 		showDropdown = true;
 	}
 
-	//-- Select bussiness from dropdown --
-	function selectBussiness(name: string) {
-		bussinessSearch = name;
-		selectedBussiness = name;
+	//-- Select business from dropdown --
+	function selectBusiness(name: string) {
+		businessSearch = name;
+		selectedBusiness = name;
 		loginError = '';
 		showDropdown = false;
 	}
 
-	//-- Focus on bussiness input when dropdown is opened --
-	function onBussinessFocus() {
+	//-- Focus on business input when dropdown is opened --
+	function onBusinessFocus() {
 		showDropdown = true;
 	}
 
 	//-- Handle click outside of dropdown --
 	function handleClickOutside(e: MouseEvent) {
 		const target = e.target as HTMLElement;
-		if (!target.closest('.bussiness-field-container')) {
+		if (!target.closest('.business-field-container')) {
 			showDropdown = false;
 		}
 	}
@@ -81,12 +81,12 @@
 	//-- Toggle dropdown --
 	function toggleDropdown() {
 		showDropdown = !showDropdown;
-		tick().then(() => bussinessInput?.focus());
+		tick().then(() => businessInput?.focus());
 	}
 
 	//-- Handle login --
 	function handleLogin() {
-		if (!selectedBussiness) {
+		if (!selectedBusiness) {
 			loginError = 'Please select a business from the list.';
 			return;
 		}
@@ -103,35 +103,35 @@
 		<div class="text-center mb-4">
 			<img src={entebusLogo} alt="Entebus Logo" class="logo-img" />
 			<h3 class="mt-2 fw-inter-700">Vendor Sign In</h3>
-			{#if bussinessName}
-				<p class="text-secondary mb-1">Access <b>{bussinessName}</b> Dashboard</p>
+			{#if businessName}
+				<p class="text-secondary mb-1">Access <b>{businessName}</b> Dashboard</p>
 			{:else}
 				<p class="text-secondary mb-1">Access Your Business Dashboard</p>
 			{/if}
 		</div>
 
 		<form on:submit|preventDefault={handleLogin}>
-			<!-- Bussiness field with dropdown -->
-			<div class="mb-3 bussiness-field-container">
-				<label for="bussinessName" class="form-label">Bussiness</label>
+			<!-- Business field with dropdown -->
+			<div class="mb-3 business-field-container">
+				<label for="businessName" class="form-label">Business</label>
 				<div class="input-group">
 					<input
-						id="bussinessName"
+						id="businessName"
 						class="form-control form-control-lg"
 						placeholder="search or select your business"
-						bind:this={bussinessInput}
-						bind:value={bussinessSearch}
-						on:input={onBussinessInput}
-						on:focus={onBussinessFocus}
+						bind:this={businessInput}
+						bind:value={businessSearch}
+						on:input={onBusinessInput}
+						on:focus={onBusinessFocus}
 						autocomplete="off"
 						role="combobox"
 						aria-autocomplete="list"
-						aria-controls="bussiness-listbox"
+						aria-controls="business-listbox"
 						aria-expanded={showDropdown}
 						required
 					/>
 					<button
-						class="input-group-text bussiness-toggle"
+						class="input-group-text business-toggle"
 						type="button"
 						on:click={toggleDropdown}
 						on:mousedown|preventDefault
@@ -144,32 +144,32 @@
 
 				<!-- Dropdown -->
 				{#if showDropdown}
-					<div class="dropdown-menu-custom" id="bussiness-listbox" role="listbox">
-						{#if filteredBussinesses.length > 0}
-							{#each filteredBussinesses as bussiness, i}
+					<div class="dropdown-menu-custom" id="business-listbox" role="listbox">
+						{#if filteredBusinesses.length > 0}
+							{#each filteredBusinesses as business, i}
 								<button
 									type="button"
-									id={'bussiness-option-' + i}
+									id={'business-option-' + i}
 									role="option"
 									class="dropdown-item-custom"
-									class:selected={bussiness.name === selectedBussiness}
-									aria-selected={bussiness.name === selectedBussiness}
-									on:click={() => selectBussiness(bussiness.name)}
+									class:selected={business.name === selectedBusiness}
+									aria-selected={business.name === selectedBusiness}
+									on:click={() => selectBusiness(business.name)}
 									on:keydown={(e) => {
 										if (e.key === 'Enter' || e.key === ' ') {
 											e.preventDefault();
-											selectBussiness(bussiness.name);
+											selectBusiness(business.name);
 										}
 									}}
 								>
 									<i class="bi bi-building me-2"></i>
-									{bussiness.name}
+									{business.name}
 								</button>
 							{/each}
 						{:else}
 							<div class="dropdown-empty">
 								<i class="bi bi-search mb-2 fs-4"></i>
-								<p class="mb-0">No businesses found matching "{bussinessSearch}"</p>
+								<p class="mb-0">No businesses found matching "{businessSearch}"</p>
 							</div>
 						{/if}
 					</div>
@@ -189,6 +189,7 @@
 					bind:value={username}
 					placeholder="username"
 					required
+					autocomplete="username"
 				/>
 			</div>
 
@@ -203,6 +204,7 @@
 						bind:value={password}
 						placeholder="password"
 						required
+						autocomplete="current-password"
 					/>
 					<span
 						class="input-group-text bg-white border-1 password-toggle"
@@ -253,7 +255,7 @@
 	.sign-in-btn:hover {
 		box-shadow: 0 8px 24px rgba(14, 201, 167, 0.35);
 	}
-	.bussiness-toggle {
+	.business-toggle {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -262,7 +264,7 @@
 		border-left: 1px solid rgba(0, 0, 0, 0.06);
 		cursor: pointer;
 	}
-	.bussiness-toggle i {
+	.business-toggle i {
 		color: #6c757d;
 		font-size: 1rem;
 	}
@@ -355,7 +357,7 @@
 		object-fit: contain;
 	}
 
-	.bussiness-field-container {
+	.business-field-container {
 		position: relative;
 	}
 
